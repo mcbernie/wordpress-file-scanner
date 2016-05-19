@@ -39,6 +39,9 @@
       .green {
         color: green;
       }
+      .orange {
+        color: orange;
+      }
     </style>
   </header>
   <body>
@@ -69,7 +72,11 @@
             #if $plugin.localonly
               <span class="plugins-list-info ">$plugin.info</span>
             #else
-              <span class="plugins-list-info green">$plugin.info</span>
+              #if $plugin.downloaded
+                <span class="plugins-list-info green">$plugin.info</span>
+              #else
+                <span class="plugins-list-info orange">$plugin.info</span>
+              #end if
             #end if
             <div class="plugin-details">
               <p>Version: <u>$plugin.version</u></p>

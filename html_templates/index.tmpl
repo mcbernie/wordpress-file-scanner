@@ -42,6 +42,12 @@
       .orange {
         color: orange;
       }
+      .red {
+        color: red;
+      }
+      .blue {
+        color: blue;
+      }
     </style>
   </header>
   <body>
@@ -69,26 +75,54 @@
         <ul>
           #for $plugin in $plugins
           <li>
-            #if $plugin.localonly
-              <span class="plugins-list-info ">$plugin.info</span>
+            #if $plugin.level3_files > 0
+              <span class="plugins-list-info red">$plugin.info</span>
             #else
-              #if $plugin.downloaded
-                <span class="plugins-list-info green">$plugin.info</span>
+              #if $plugin.localonly
+                <span class="plugins-list-info ">$plugin.info</span>
               #else
-                <span class="plugins-list-info orange">$plugin.info</span>
+                #if $plugin.downloaded
+                  #if $plugin.level2_files > 0
+                  <span class="plugins-list-info blue">$plugin.info</span>
+                  #else
+                  <span class="plugins-list-info green">$plugin.info</span>
+                  #end if
+                #else
+                  <span class="plugins-list-info orange">$plugin.info</span>
+                #end if
               #end if
             #end if
             <div class="plugin-details">
               <p>Version: <u>$plugin.version</u></p>
               <p>Downloaded: <u>$plugin.downloaded</u></p>
-              <p>Localfiles only:
-                <ul>
-                #for $localonly in $plugin.localonly
-                  <li><a href="file://$localonly">$localonly</a></li>
-                #end for
-                </ul>
-              </p>
+              #if $plugin.localonly
+                <p>Localfiles only:
+                  <ul>
+                  #for $localonly in $plugin.localonly
+                    <li><a href="file://$localonly">$localonly</a></li>
+                  #end for
+                  </ul>
+                </p>
+              #end if
             </div>
+            #if $plugin.files_checked
+              <div class="plugin-details">
+                <p>Files with level 1: <u>$plugin.level1_files</u></p>
+                <p>Files with level 2: <u>$plugin.level2_files</u></p>
+                <p>Files with level 3: <u>$plugin.level3_files</u></p>
+                  <ul>
+                  #for $checkedfiles in $plugin.files_checked
+                    <li>
+                      <b>lvl:<u>$checkedfiles.warning_level</u></b><a href="#" onclick="if (document.getElementById('$checkedfiles.id').style.display == 'none') {document.getElementById('$checkedfiles.id').style.display = 'block';} else {document.getElementById('$checkedfiles.id').style.display = 'none';} return false;">$checkedfiles.file</a>
+                      <div id="$checkedfiles.id" class="file-content" style="display:none;">
+                        $checkedfiles.content
+                      </div>
+                    </li>
+                  #end for
+                  </ul>
+                </p>
+              </div>
+            #end if
           </li>
 
           #end for

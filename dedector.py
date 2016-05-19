@@ -36,6 +36,13 @@ from Cheetah.Template import Template
 
 wordpress_path = ""
 report_output = ""
+current_plugin_nr = 0
+
+def get_plugin_nr():
+    global current_plugin_nr
+    a = current_plugin_nr
+    current_plugin_nr += 1
+    return a
 
 print "= Wordpress file manipulation dedector"
 print "= Version 0.01a mcbernie"
@@ -129,7 +136,7 @@ class DownloadPluginInformations:
 
 class Plugin:
     def __init__(self, path, plugin_file, name):
-
+        self.id = "plgin_" + str(get_plugin_nr())
         self.path = path
         self.plugin_file = plugin_file
         self.name = name
@@ -142,7 +149,63 @@ class Plugin:
         self.p_ver_found = False
         self.infos()
         self.local_only = []
+        self.files_checked = []
+        self.level3_files = 0
+        self.level2_files = 0
+        self.level1_files = 0
         self.pl_download = DownloadPluginInformations(self, prepend_log = "["+ self.plugin_name +"] ")
+
+    def grep_short_found(self, content, what, lvl):
+        return cgi.escape(content).replace("\n","<br/>").replace(what,"<span class='mark-lvl"+ str(lvl) +"'>"+ what +"</span>")
+
+
+    def grep_files(self):
+        #if self.pl_download.downloaded == False:
+        self.files_checked = []
+        self.level3_files = 0
+        self.level2_files = 0
+        self.level1_files = 0
+        file_id = 0
+        for root, dirs, files in os.walk(self.path):
+            for file in files:
+                if file.endswith(".php"):
+                    file_to_scan = os.path.join(root, file)
+                    warning_level = 0
+
+
+                    with open(file_to_scan, "r") as local_file:
+                        content = local_file.read()
+                        report_content = ""
+                        if "eval(base64_decode" in content:
+                            warning_level = 3
+                            self.level3_files += 1
+                            report_content = self.grep_short_found(content=content, what="eval(base64_decode", lvl=3)
+                        elif "eval(gzuncompress(base64_decode" in content:
+                            warning_level = 3
+                            self.level3_files += 1
+                            report_content = self.grep_short_found(content=content, what="eval(gzuncompress(base64_decode", lvl=3)
+                        elif "eval(" in content:
+                            warning_level = 2
+                            self.level2_files += 1
+                            report_content = self.grep_short_found(content=content, what="eval(", lvl=2)
+                        elif ").\"\".chr(" in content:
+                            warning_level = 1
+                            self.level1_files += 1
+                            report_content = self.grep_short_found(content=content, what=").\"\".chr(", lvl=1)
+                        elif "$GLOBALS" in content or "$TABLE" in content:
+                            warning_level = 1
+                            self.level1_files += 1
+                            report_content = self.grep_short_found(content=content, what="$GLOBALS", lvl=1)
+                        elif "\\x" in content:
+                            warning_level = 1
+                            self.level1_files += 1
+                            report_content = self.grep_short_found(content=content, what="\\x", lvl=1)
+
+                    if warning_level > 0:
+                        self.files_checked.append({'id': self.id + "_fid_" + str(file_id),'file': file_to_scan, 'content': report_content, 'warning_level': warning_level})
+                        file_id += 1
+
+
 
     def compare(self):
         #self.name + "." + self.plugin_version
@@ -342,11 +405,16 @@ for plugin in wp_checker.plugins.list:
     plugin.download()
     plugin.print_info()
     plugin.compare()
+    plugin.grep_files()
     template_plugins.append({
                             "info": "<b>" + plugin.plugin_name + "</b> Version:" + plugin.plugin_version,
                             "version": plugin.plugin_version,
                             "downloaded": plugin.pl_download.downloaded,
-                            "localonly": plugin.local_only
+                            "localonly": plugin.local_only,
+                            "level1_files": plugin.level1_files,
+                            "level2_files": plugin.level2_files,
+                            "level3_files": plugin.level3_files,
+                            "files_checked": plugin.files_checked
                            })
 
 print "\n"

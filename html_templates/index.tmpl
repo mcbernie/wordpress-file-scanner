@@ -1,0 +1,135 @@
+<html>
+  <header>
+    <style>
+      p {
+        margin-bottom: 0.1em;
+        margin-top: 0.1em;
+      }
+      li {
+        margin-top: 0.8em;
+      }
+      .plugin-details li {
+        margin-top: 0px;
+        margin-bottom: 0px;
+      }
+      .plugin-details ul, .comparings ul {
+        list-style-type: none;
+        padding-left: 10px;
+      }
+      .plugins-list-info {
+        font-size: 1.1em;
+      }
+      .diff {
+        color: red;
+      }
+      .left , .right {
+        font-weight: bold;
+      }
+      .file-title {
+        font-size: 1.1em;
+      }
+      .file-content {
+        border: 1px solid grey;
+        margin-left: 20px;
+        margin-right: 20px;
+        padding-left: 5px;
+        padding-right: 5px;
+        height: auto;
+      }
+      .green {
+        color: green;
+      }
+    </style>
+  </header>
+  <body>
+    <h1>Wordpress file manipulation dedector (v0.1a)</h1>
+
+    <div class="main_report">
+      <p>Local InstallationPath: <u>$local_installation_path</u></p>
+      <p>Wordpress Version: <u>$wordpress_version</u></p>
+      <p>Scan Date: <u>$scanning_at</u></p>
+    </div>
+
+    <div class="only_local">
+      <h2>Only local files</h2>
+      <ul>
+      #for $local in $local_only
+      <li><a href="file://$local">$local</a></li>
+      #end for
+      </ul>
+    </div>
+
+    <div class="plugins">
+      <h2>Installed Plugins</h2>
+      <p>Found <u>$plugins_count</u> Plugins</p>
+      <div class="plugins-list">
+        <ul>
+          #for $plugin in $plugins
+          <li>
+            #if $plugin.localonly
+              <span class="plugins-list-info ">$plugin.info</span>
+            #else
+              <span class="plugins-list-info green">$plugin.info</span>
+            #end if
+            <div class="plugin-details">
+              <p>Version: <u>$plugin.version</u></p>
+              <p>Downloaded: <u>$plugin.downloaded</u></p>
+              <p>Localfiles only:
+                <ul>
+                #for $localonly in $plugin.localonly
+                  <li><a href="file://$localonly">$localonly</a></li>
+                #end for
+                </ul>
+              </p>
+            </div>
+          </li>
+
+          #end for
+        </ul>
+      </div>
+    </div>
+
+    <div class="compares">
+      <h2>File Comparing</h2>
+      <p><u>$files_to_compare_len</u> Files to Compare</p>
+      <div class="comparings">
+        <ul>
+          #for $comp in $files_to_compare
+          <li class="diff">$comp</li>
+
+          #end for
+        </ul>
+      </div>
+      <h3>File Contents:</h3>
+      <div class="comparings">
+        <ul>
+          #for $comp in $diff_files
+          <li>
+            <div class="file-title"><a href="#" onclick="if (document.getElementById('$comp.id').style.display == 'none') {document.getElementById('$comp.id').style.display = 'block';} else {document.getElementById('$comp.id').style.display = 'none';} return false;">$comp.title</a></div>
+            <div id="$comp.id" class="file-content" style="display:none;">
+              $comp.content
+            </div>
+          </li>
+          #end for
+        </ul>
+      </div>
+    </div>
+
+    <div class="compares">
+      <h2>All Local Only files</h2>
+      <p><u>$local_only_files_len</u> local-only Files found</p>
+      <div class="comparings">
+        <ul>
+          #for $comp in $local_only_files
+          <li>
+            <div class="file-title"><a href="#" onclick="if (document.getElementById('$comp.id').style.display == 'none') {document.getElementById('$comp.id').style.display = 'block';} else {document.getElementById('$comp.id').style.display = 'none';} return false;">$comp.title</a></div>
+            <div id="$comp.id" class="file-content" style="display:none;">
+              $comp.content
+            </div>
+          </li>
+          #end for
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

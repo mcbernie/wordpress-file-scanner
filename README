@@ -1,0 +1,15 @@
+Wordpress file manipulation dedector (v0.1a)
+
+
+My idea and how it (should) work:
+dedect local wordpress installation for file changes
+
+  1. download local wordpress version from wordpress.org
+  2. download all local installed wordpress plugins,  (if they downloadable)
+  3. make file comparson between original and installed files
+  4. mark all "only local files"
+  5. mark all "changed files" and run diff over it
+  6. generate simple html report
+
+
+Copyright (C) 2016  Nicolas Brueggemann(github:mcbernie)

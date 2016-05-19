@@ -12,4 +12,19 @@ dedect local wordpress installation for file changes
   6. generate simple html report
 
 
+need todo:
+
+  - cleanup code
+  - make main method
+  and much more...
+
+ideas / improvements:
+
+  - scan php files for some code snippets like "eval(gzinflate(base64_decode(...."
+  - create a simple plugin architecture for scanner addons
+
+
+
+
+
 Copyright (C) 2016  Nicolas Brueggemann(github:mcbernie)

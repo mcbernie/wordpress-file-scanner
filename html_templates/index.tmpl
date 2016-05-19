@@ -113,7 +113,7 @@
                   <ul>
                   #for $checkedfiles in $plugin.files_checked
                     <li>
-                      <b>lvl:<u>$checkedfiles.warning_level</u></b><a href="#" onclick="if (document.getElementById('$checkedfiles.id').style.display == 'none') {document.getElementById('$checkedfiles.id').style.display = 'block';} else {document.getElementById('$checkedfiles.id').style.display = 'none';} return false;">$checkedfiles.file</a>
+                      <b>lvl:$checkedfiles.warning_level&nbsp;</b><a href="#" onclick="if (document.getElementById('$checkedfiles.id').style.display == 'none') {document.getElementById('$checkedfiles.id').style.display = 'block';} else {document.getElementById('$checkedfiles.id').style.display = 'none';} return false;">$checkedfiles.file</a>
                       <div id="$checkedfiles.id" class="file-content" style="display:none;">
                         $checkedfiles.content
                       </div>
@@ -172,5 +172,25 @@
         </ul>
       </div>
     </div>
+
+    #if $grep_uploads
+      <div class="plugin-details">
+        <h2>Upload Folder Checking:</h2>
+        <p>Files with level 1: <u>$grep_uploads_lvl1</u></p>
+        <p>Files with level 2: <u>$grep_uploads_lvl2</u></p>
+        <p>Files with level 3: <u>$grep_uploads_lvl3</u></p>
+          <ul>
+          #for $checkedfiles in $grep_uploads
+            <li>
+              <b>lvl:$checkedfiles.warning_level&nbsp;</b><a href="#" onclick="if (document.getElementById('$checkedfiles.id').style.display == 'none') {document.getElementById('$checkedfiles.id').style.display = 'block';} else {document.getElementById('$checkedfiles.id').style.display = 'none';} return false;">$checkedfiles.file</a>
+              <div id="$checkedfiles.id" class="file-content" style="display:none;">
+                $checkedfiles.content
+              </div>
+            </li>
+          #end for
+          </ul>
+        </p>
+      </div>
+    #end if
   </body>
 </html>

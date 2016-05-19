@@ -12,6 +12,14 @@ dedect local wordpress installation for file changes
   6. generate simple html report
 
 
+new:
+
+  - added greps files to for level1, level2 and level3
+    each line is a search pattern for the specified level3
+
+  - scans upload folder for level1, 2 and 3 warnings
+  
+
 need todo:
 
   - cleanup code

@@ -34,6 +34,7 @@ import urllib2, zipfile, shutil, filecmp, difflib, datetime, cgi
 import Cheetah
 from Cheetah.Template import Template
 
+### Init Part >
 wordpress_path = ""
 report_output = ""
 current_plugin_nr = 0
@@ -86,6 +87,75 @@ else:
 all_only_local_files = []
 all_files_to_compare = []
 
+
+### < End Init part
+
+### > Classes
+
+class GrepScanner:
+    def __init__(self, path_to_scan, id="", pattern = [".php"]):
+        self.path = path_to_scan
+        self.files_checked = []
+        self.level3_files = 0
+        self.level2_files = 0
+        self.level1_files = 0
+        self.pattern = pattern
+        self.id = id
+
+    def grep_short_found(self, content, what, lvl):
+        return cgi.escape(content).replace("\n","<br/>").replace(what,"<span class='mark-lvl"+ str(lvl) +"'>"+ what +"</span>")
+
+    def custom_ends_with(self, file):
+        if not self.pattern:
+            return True
+        for patt in self.pattern:
+            if file.endswith(patt):
+                return True
+        return False
+
+    def scan(self):
+        self.files_checked = []
+        self.level3_files = 0
+        self.level2_files = 0
+        self.level1_files = 0
+        file_id = 0
+        for root, dirs, files in os.walk(self.path):
+            for file in files:
+                if self.custom_ends_with(file):
+                    file_to_scan = os.path.join(root, file)
+                    warning_level = 0
+                    with open(file_to_scan, "r") as local_file:
+                        content = local_file.read()
+                        report_content = ""
+                        with open(os.path.join("greps", "level3.txt"), "r") as level_file:
+                            for grepline in level_file:
+                                if grepline.strip() in content:
+                                    warning_level = 3
+                                    self.level1_files += 1
+                                    report_content = self.grep_short_found(content=content, what=grepline.strip(), lvl=3)
+                                    break
+                        if warning_level == 0:
+                            with open(os.path.join("greps", "level2.txt"), "r") as level_file:
+                                for grepline in level_file:
+                                    if grepline.strip() in content:
+                                        warning_level = 2
+                                        self.level2_files += 1
+                                        report_content = self.grep_short_found(content=content, what=grepline.strip(), lvl=2)
+                                        break
+                        if warning_level == 0:
+                            with open(os.path.join("greps", "level1.txt"), "r") as level_file:
+                                for grepline in level_file:
+                                    if grepline.strip() in content:
+                                        warning_level = 1
+                                        self.level1_files += 1
+                                        report_content = self.grep_short_found(content=content, what=grepline.strip(), lvl=1)
+                                        break
+
+                    if warning_level > 0:
+                        self.files_checked.append({'id': self.id + "_fid_" + str(file_id),'file': file_to_scan, 'content': report_content, 'warning_level': warning_level})
+                        file_id += 1
+
+
 class DownloadPluginInformations:
     def __init__(self, plugin, prepend_log = ""):
         self.plugin = plugin
@@ -122,11 +192,6 @@ class DownloadPluginInformations:
                 for member in zippedfile.infolist():
                     words = member.filename.split('/')
                     path = temp_path + "/"
-                    #for word in words[:-1]:
-                    #    drive, word = os.path.split(word)
-                    ##    head, word = os.path.split(word)
-                    #    if word in (os.curdir, os.pardir, ''): continue
-                    #    path = os.path.join(path, word)
                     zippedfile.extract(member, path)
             self.extracted = True
             os.remove(os.path.join(temp_path, self.local_filename))
@@ -149,62 +214,19 @@ class Plugin:
         self.p_ver_found = False
         self.infos()
         self.local_only = []
+        self.pl_download = DownloadPluginInformations(self, prepend_log = "["+ self.plugin_name +"] ")
         self.files_checked = []
         self.level3_files = 0
         self.level2_files = 0
         self.level1_files = 0
-        self.pl_download = DownloadPluginInformations(self, prepend_log = "["+ self.plugin_name +"] ")
-
-    def grep_short_found(self, content, what, lvl):
-        return cgi.escape(content).replace("\n","<br/>").replace(what,"<span class='mark-lvl"+ str(lvl) +"'>"+ what +"</span>")
-
+        self.grepscanner = GrepScanner(path_to_scan=self.path, id=self.id)
 
     def grep_files(self):
-        #if self.pl_download.downloaded == False:
-        self.files_checked = []
-        self.level3_files = 0
-        self.level2_files = 0
-        self.level1_files = 0
-        file_id = 0
-        for root, dirs, files in os.walk(self.path):
-            for file in files:
-                if file.endswith(".php"):
-                    file_to_scan = os.path.join(root, file)
-                    warning_level = 0
-
-
-                    with open(file_to_scan, "r") as local_file:
-                        content = local_file.read()
-                        report_content = ""
-                        if "eval(base64_decode" in content:
-                            warning_level = 3
-                            self.level3_files += 1
-                            report_content = self.grep_short_found(content=content, what="eval(base64_decode", lvl=3)
-                        elif "eval(gzuncompress(base64_decode" in content:
-                            warning_level = 3
-                            self.level3_files += 1
-                            report_content = self.grep_short_found(content=content, what="eval(gzuncompress(base64_decode", lvl=3)
-                        elif "eval(" in content:
-                            warning_level = 2
-                            self.level2_files += 1
-                            report_content = self.grep_short_found(content=content, what="eval(", lvl=2)
-                        elif ").\"\".chr(" in content:
-                            warning_level = 1
-                            self.level1_files += 1
-                            report_content = self.grep_short_found(content=content, what=").\"\".chr(", lvl=1)
-                        elif "$GLOBALS" in content or "$TABLE" in content:
-                            warning_level = 1
-                            self.level1_files += 1
-                            report_content = self.grep_short_found(content=content, what="$GLOBALS", lvl=1)
-                        elif "\\x" in content:
-                            warning_level = 1
-                            self.level1_files += 1
-                            report_content = self.grep_short_found(content=content, what="\\x", lvl=1)
-
-                    if warning_level > 0:
-                        self.files_checked.append({'id': self.id + "_fid_" + str(file_id),'file': file_to_scan, 'content': report_content, 'warning_level': warning_level})
-                        file_id += 1
-
+        self.grepscanner.scan()
+        self.level1_files = self.grepscanner.level1_files
+        self.level2_files = self.grepscanner.level2_files
+        self.level3_files = self.grepscanner.level3_files
+        self.files_checked = self.grepscanner.files_checked
 
 
     def compare(self):
@@ -347,6 +369,8 @@ class WordpressChecker:
         self.downloaded = False
         self.extracted = False
 
+        self.g_uploads = False
+
         self.read_version()
         print "[Main] Local Wordpress Version: " + self.installed_version
         self.download()
@@ -356,6 +380,8 @@ class WordpressChecker:
         c = CompareFolder(local_installation=self.path, remote_installation=os.path.join(temp_path,"wordpress"), ignore_uploads = True, ignore_themes = True, ignore_plugins = True, prepend_log = "[Main] ")
         c.compare()
 
+        self.scan_uploads()
+
 
     def read_version(self):
         f = open(os.path.join(self.path,"wp-includes", "version.php"), "r")
@@ -363,6 +389,11 @@ class WordpressChecker:
             if "$wp_version = '" in line:
                 self.installed_version = line.split('=')[1].replace("'", "").replace(";", "").strip()
                 break
+
+    def scan_uploads(self):
+        self.g_uploads = GrepScanner(path_to_scan=os.path.join(self.path, "wp-content", "uploads"), pattern = [''])
+        self.g_uploads.scan()
+
 
     def download(self):
         if downloading_enabled == False:
@@ -396,6 +427,8 @@ class WordpressChecker:
             if e.code == 404:
                 print "[Main] cannot download wordpress installation!"
 
+
+### Main part
 
 
 wp_checker = WordpressChecker(wordpress_path)
@@ -457,6 +490,10 @@ t.plugins = template_plugins
 t.files_to_compare_len = len(all_files_to_compare)
 t.files_to_compare = not_the_same
 t.local_only_files_len = len(all_only_local_files)
+t.grep_uploads = wp_checker.g_uploads.files_checked
+t.grep_uploads_lvl1 =  wp_checker.g_uploads.level1_files
+t.grep_uploads_lvl2 =  wp_checker.g_uploads.level2_files
+t.grep_uploads_lvl3 =  wp_checker.g_uploads.level3_files
 
 alof_array = []
 id_count = 0
@@ -474,5 +511,5 @@ print "\n[Main > Report] Generating report.html"
 with open(os.path.join(report_output, "report.html"), "wb") as local_file:
     local_file.write(str(t))
 
-print "[Main > Cleanup] remove downloads and temp path"
-shutil.rmtree(temp_path)
+#print "[Main > Cleanup] remove downloads and temp path"
+#shutil.rmtree(temp_path)
